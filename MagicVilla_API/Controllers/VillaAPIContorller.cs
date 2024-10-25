@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
 
 namespace MagicVilla_API.Controllers
 {
@@ -17,9 +18,21 @@ namespace MagicVilla_API.Controllers
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public class VillaAPIContorller : ControllerBase
     {
+
+        //meken wenne app eke run krankota open wena CMD file ele log krna ena.
+        //get all eke krala thiynne eka. me krala thiyna eka default ena widiha
+        //serilog use krla custom widihata meka hadanna puluwan ekata Serilog.AspNetCore, Serilog.Sinks.File packege deka install krgnna one
+        //me krana log eken api krna dewal wenama log file ekak hadila ele log wenwa. packages deka install krala program.cs eke configer krnna one
+        private readonly ILogger<VillaAPIContorller> _logger;
+        public VillaAPIContorller(ILogger<VillaAPIContorller> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpGet]
         public ActionResult<IEnumerable<VillaDTO>> GetVillas()
         {
+            _logger.LogInformation("Get All villa");
             return Ok(VillaStore.villaList);
         }
 
