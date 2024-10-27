@@ -16,6 +16,8 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
 builder.Host.UseSerilog();
 
 builder.Services.AddScoped<IVillaRepository, VillaRepository>();
+builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
+
 
 //Auto mapper configaration
 builder.Services.AddAutoMapper(typeof(MappingConfig));

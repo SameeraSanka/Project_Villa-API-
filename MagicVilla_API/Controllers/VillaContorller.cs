@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace MagicVilla_API.Controllers
@@ -19,56 +20,75 @@ namespace MagicVilla_API.Controllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public class VillaAPIContorller : ControllerBase
+    public class VillaContorller : ControllerBase
     {
 
         //meken wenne app eke run krankota open wena CMD file ele log krna ena.
         //get all eke krala thiynne eka. me krala thiyna eka default ena widiha
         //serilog use krla custom widihata meka hadanna puluwan ekata Serilog.AspNetCore, Serilog.Sinks.File packege deka install krgnna one
         //me krana log eken api krna dewal wenama log file ekak hadila ele log wenwa. packages deka install krala program.cs eke configer krnna one
-        private readonly ILogger<VillaAPIContorller> _logger;
+        private readonly ILogger<VillaContorller> _logger;
 
         //Automapper user krnna ek inject krnwa
         private readonly IMapper _mapper;
         private readonly IVillaRepository _dbVilla;
-        public VillaAPIContorller(ILogger<VillaAPIContorller> logger, IVillaRepository dbVilla, IMapper mapper)
+        protected APIResponce _responce;
+        public VillaContorller(ILogger<VillaContorller> logger, IVillaRepository dbVilla, IMapper mapper)
         {
             _logger = logger;
             _dbVilla = dbVilla;
             _mapper = mapper;
+            _responce = new APIResponce();
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VillaDTO>>> GetVillas()
+        public async Task<ActionResult<APIResponce>> GetVillas()
         {
-            _logger.LogInformation("Get All villa");
-            IEnumerable<Villa> villaLsit = await _dbVilla.GetAllAsync();
-            var mappng = _mapper.Map<List<VillaDTO>>(villaLsit);
-            return Ok(mappng);
-        } 
+            try
+            {
+                _logger.LogInformation("Get All villa");
+                IEnumerable<Villa> villaLsit = await _dbVilla.GetAllAsync();
+                var mappng = _mapper.Map<List<VillaDTO>>(villaLsit);
+                _responce.Result = mappng;
+                _responce.StatusCode = HttpStatusCode.OK;
+                _responce.IsSuccess = true;
+                return Ok(_responce);
+            }
+            catch (Exception ex)
+            {
+                _responce.IsSuccess = false;
+                _responce.ErrorMessages = new List<string>() { ex.Message };
+            }
+            return _responce;
+
+        }
 
         [HttpGet("{id:int}", Name = "GetVilla")]
-        public async Task<ActionResult<VillaDTO>> GetVilla(int id)
+        public async Task<ActionResult<APIResponce>> GetVilla(int id)
         {
             if (id == 0)
             {
-                return BadRequest();
+                _responce.StatusCode = HttpStatusCode.BadRequest;
+                return BadRequest(_responce);
             }
             else
             {
-                var villa =await _dbVilla.GetAsync(u => u.Id == id);
+                var villa = await _dbVilla.GetAsync(u => u.Id == id);
                 if (villa == null)
                 {
                     return NotFound();
                 }
                 var mapping = _mapper.Map<VillaDTO>(villa);
-                return Ok(mapping);
+                _responce.Result = mapping;
+                _responce.StatusCode = HttpStatusCode.OK;
+                _responce.IsSuccess = true;
+                return Ok(_responce);
             }
-            
+
         }
 
         [HttpPost]
-        public async Task<ActionResult<VillaCreateDTO>> CreateVilla([FromBody] VillaCreateDTO villaCreateDTO)
+        public async Task<ActionResult<APIResponce>> CreateVilla([FromBody] VillaCreateDTO villaCreateDTO)
         {
             //model eke requird kiyla dammoth eka check wenne meken. 11 line eke thiyana [ApiController] ekenuth wenne mekamai.
             //eken wenne build in support eka labenwa Data annotation walin.
@@ -89,19 +109,21 @@ namespace MagicVilla_API.Controllers
                 return BadRequest(villaCreateDTO);
             }
             //methana Villa model eken onject ekak hadnwa model kiyla. itpsse villaCreateDTO eken ena data tikaVilla ekata map krnwa
-            Villa model = _mapper.Map<Villa>(villaCreateDTO);
+            Villa villa = _mapper.Map<Villa>(villaCreateDTO);
 
+            await _dbVilla.CreateAsync(villa);
 
-            await _dbVilla.CreateAsync(model);
-            
-            return CreatedAtRoute("GetVilla", new { id = model.Id }, model);
+            _responce.Result = _mapper.Map<Villa>(villa);
+            _responce.StatusCode = HttpStatusCode.Created;
+            _responce.IsSuccess = true;
+            return CreatedAtRoute("GetVilla", new { id = villa.Id }, _responce);
         }
 
         //ActionResult eka dunnth return type eka define krnna wenwa mewidihata "ActionResult<VillaDTO>"
         //eth IActionResult dunnama ehema krnna one na
 
-        [HttpDelete("{id:int}",Name ="DeleteVilla")]
-        public async Task<IActionResult> DeleteVilla(int id)
+        [HttpDelete("{id:int}", Name = "DeleteVilla")]
+        public async Task<ActionResult<APIResponce>> DeleteVilla(int id)
         {
             if (id == 0)
             {
@@ -113,22 +135,26 @@ namespace MagicVilla_API.Controllers
                 return NotFound();
             }
             await _dbVilla.RemoveAsync(villa);
-
-            return NoContent();
+            _responce.Result = villa;
+            _responce.StatusCode = HttpStatusCode.NoContent;
+            _responce.IsSuccess = true;
+            return Ok(_responce);
         }
 
-        [HttpPut("{id:int}", Name ="UpdateVilla")]
-        public async Task<IActionResult> UpdateVilla(int id, [FromBody]VillaUpdateDTO villaUpdateDTO)
+        [HttpPut("{id:int}", Name = "UpdateVilla")]
+        public async Task<ActionResult<APIResponce>> UpdateVilla(int id, [FromBody] VillaUpdateDTO villaUpdateDTO)
         {
             if (villaUpdateDTO == null || id != villaUpdateDTO.Id)
             {
                 return BadRequest();
             }
-            Villa model = _mapper.Map<Villa>(villaUpdateDTO);
+            Villa villa = _mapper.Map<Villa>(villaUpdateDTO);
 
-            await _dbVilla.UpdateAsync(model);
-
-            return NoContent();
+            await _dbVilla.UpdateAsync(villa);
+            _responce.Result = villa;
+            _responce.StatusCode = HttpStatusCode.NoContent;
+            _responce.IsSuccess = true;
+            return Ok(_responce);
         }
 
         //me patch eka add krnna kalin nuget package 2k install krnna one NewtonsoftJson ekai jsonPatch ekai.
@@ -140,7 +166,7 @@ namespace MagicVilla_API.Controllers
             {
                 return BadRequest();
             }
-            var villa = await _dbVilla.GetAsync(v => v.Id == id, tracked : false);
+            var villa = await _dbVilla.GetAsync(v => v.Id == id, tracked: false);
             VillaUpdateDTO villaUpdateDTO = _mapper.Map<VillaUpdateDTO>(villa);
 
 
