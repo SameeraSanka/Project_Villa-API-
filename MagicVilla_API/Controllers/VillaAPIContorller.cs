@@ -46,56 +46,62 @@ namespace MagicVilla_API.Controllers
             {
                 return BadRequest();
             }
-            var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
-            if (villa == null)
+            else
             {
-                return NotFound();
+                var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
+                if (villa == null)
+                {
+                    return NotFound();
+                }
+                return Ok(villa);
             }
-            return Ok(villa);
+            
         }
 
         [HttpPost]
-        public ActionResult<VillaDTO> CreateVilla([FromBody] VillaDTO villaDTO)
+        public ActionResult<VillaCreateDTO> CreateVilla([FromBody] VillaCreateDTO villaCreateDTO)
         {
             //model eke requird kiyla dammoth eka check wenne meken. 11 line eke thiyana [ApiController] ekenuth wenne mekamai.
             //eken wenne build in support eka labenwa Data annotation walin.
-            //pe pala if condition ekai [ApiController] dekama thibbith valide da ndda kiyla check krnne [ApiController] eken.
+            //me pala if condition ekai [ApiController] dekama thibbith valide da ndda kiyla check krnne [ApiController] eken.
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // villa stor eke thiyna mamkma dmmoth eka invalid krnna mehema danawa
-            if (_db.Villas.FirstOrDefault(u => u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
+            // villa eke thiyna namkma dmmoth eka invalid krnna mehema danawa
+            if (_db.Villas.FirstOrDefault(u => u.Name.ToLower() == villaCreateDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Villa already exists");
                 return BadRequest(ModelState);
             }
-            if (villaDTO == null)
+            if (villaCreateDTO == null)
             {
-                return BadRequest(villaDTO);
+                return BadRequest(villaCreateDTO);
             }
 
-            if (villaDTO.Id > 0)
+            //if (villaDTO.Id > 0)
+            //{
+            //    return BadRequest();
+            //}
+            Villa model = new()
             {
-                return BadRequest();
-            }
-            Villa model = new Villa()
-            {
-                Amenity = villaDTO.Amenity,
-                Details = villaDTO.Details,
-                Id = villaDTO.Id,
-                ImageUrl = villaDTO.ImageUrl,
-                Name = villaDTO.Name,
-                Occupancy = villaDTO.Occupancy,
-                Rate = villaDTO.Rate,
-                Sqft = villaDTO.Sqft,
+                //Id = villaDTO.Id,
+                Name = villaCreateDTO.Name,
+                Details = villaCreateDTO.Details,
+                Rate = villaCreateDTO.Rate,
+                Amenity = villaCreateDTO.Amenity,
+                Sqft = villaCreateDTO.Sqft,
+                ImageUrl = villaCreateDTO.ImageUrl,
+                Occupancy = villaCreateDTO.Occupancy,
+               
+                
             };
 
             _db.Villas.Add(model);
             _db.SaveChanges();
             
-            return CreatedAtRoute("GetVilla", new { id = villaDTO.Id }, villaDTO);
+            return CreatedAtRoute("GetVilla", new { id = model.Id }, model);
         }
 
         //ActionResult eka dunnth return type eka define krnna wenwa mewidihata "ActionResult<VillaDTO>"
@@ -119,23 +125,23 @@ namespace MagicVilla_API.Controllers
         }
 
         [HttpPut("{id:int}", Name ="UpdateVilla")]
-        public IActionResult UpdateVilla(int id, [FromBody]VillaDTO villaDTO)
+        public IActionResult UpdateVilla(int id, [FromBody]VillaUpdateDTO villaUpdateDTO)
         {
-            if ( villaDTO == null || id != villaDTO.Id)
+            if (villaUpdateDTO == null || id != villaUpdateDTO.Id)
             {
                 return BadRequest();
             }
 
             Villa model = new Villa()
             {
-                Amenity = villaDTO.Amenity,
-                Details = villaDTO.Details,
-                Id = villaDTO.Id,
-                ImageUrl = villaDTO.ImageUrl,
-                Name = villaDTO.Name,
-                Occupancy = villaDTO.Occupancy,
-                Rate = villaDTO.Rate,
-                Sqft = villaDTO.Sqft,
+                Amenity = villaUpdateDTO.Amenity,
+                Details = villaUpdateDTO.Details,
+                Id = villaUpdateDTO.Id,
+                ImageUrl = villaUpdateDTO.ImageUrl,
+                Name = villaUpdateDTO.Name,
+                Occupancy = villaUpdateDTO.Occupancy,
+                Rate = villaUpdateDTO.Rate,
+                Sqft = villaUpdateDTO.Sqft,
             };
             _db.Villas.Update(model);
             _db.SaveChanges();
@@ -146,14 +152,14 @@ namespace MagicVilla_API.Controllers
         //me patch eka add krnna kalin nuget package 2k install krnna one NewtonsoftJson ekai jsonPatch ekai.
         // itapsse program.cs eke AddNewtonsoftJson kiyla controllers wla reg krnna one
         [HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
-        public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaDTO> patchDTO)
+        public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDTO> patchDTO)
         {
             if (patchDTO == null || id == 0)
             {
                 return BadRequest();
             }
             var villa = _db.Villas.AsNoTracking().FirstOrDefault(v => v.Id == id);
-            VillaDTO villaDTO = new()
+            VillaUpdateDTO villaUpdateDTO = new()
             {
                 Amenity = villa.Amenity,
                 Details = villa.Details,
@@ -169,18 +175,18 @@ namespace MagicVilla_API.Controllers
             {
                 return NotFound();
             }
-            patchDTO.ApplyTo(villaDTO, ModelState);
+            patchDTO.ApplyTo(villaUpdateDTO, ModelState);
 
             Villa model = new Villa()
             {
-                Amenity = villaDTO.Amenity,
-                Details = villaDTO.Details,
-                Id = villaDTO.Id,
-                ImageUrl = villaDTO.ImageUrl,
-                Name = villaDTO.Name,
-                Occupancy = villaDTO.Occupancy,
-                Rate = villaDTO.Rate,
-                Sqft = villaDTO.Sqft,
+                Amenity = villaUpdateDTO.Amenity,
+                Details = villaUpdateDTO.Details,
+                Id = villaUpdateDTO.Id,
+                ImageUrl = villaUpdateDTO.ImageUrl,
+                Name = villaUpdateDTO.Name,
+                Occupancy = villaUpdateDTO.Occupancy,
+                Rate = villaUpdateDTO.Rate,
+                Sqft = villaUpdateDTO.Sqft,
             };
             _db.Villas.Update(model);
             _db.SaveChanges();
