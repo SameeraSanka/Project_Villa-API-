@@ -33,14 +33,14 @@ namespace MagicVilla_API.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<VillaDTO>> GetVillas()
+        public async Task<ActionResult<IEnumerable<VillaDTO>>> GetVillas()
         {
             _logger.LogInformation("Get All villa");
-            return Ok(_db.Villas.ToList());
+            return Ok(await _db.Villas.ToListAsync());
         }
 
         [HttpGet("{id:int}", Name = "GetVilla")]
-        public ActionResult<VillaDTO> GetVilla(int id)
+        public async Task<ActionResult<VillaDTO>> GetVilla(int id)
         {
             if (id == 0)
             {
@@ -48,7 +48,7 @@ namespace MagicVilla_API.Controllers
             }
             else
             {
-                var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
+                var villa =await _db.Villas.FirstOrDefaultAsync(u => u.Id == id);
                 if (villa == null)
                 {
                     return NotFound();
@@ -59,7 +59,7 @@ namespace MagicVilla_API.Controllers
         }
 
         [HttpPost]
-        public ActionResult<VillaCreateDTO> CreateVilla([FromBody] VillaCreateDTO villaCreateDTO)
+        public async Task<ActionResult<VillaCreateDTO>> CreateVilla([FromBody] VillaCreateDTO villaCreateDTO)
         {
             //model eke requird kiyla dammoth eka check wenne meken. 11 line eke thiyana [ApiController] ekenuth wenne mekamai.
             //eken wenne build in support eka labenwa Data annotation walin.
@@ -70,7 +70,7 @@ namespace MagicVilla_API.Controllers
             }
 
             // villa eke thiyna namkma dmmoth eka invalid krnna mehema danawa
-            if (_db.Villas.FirstOrDefault(u => u.Name.ToLower() == villaCreateDTO.Name.ToLower()) != null)
+            if (await _db.Villas.FirstOrDefaultAsync(u => u.Name.ToLower() == villaCreateDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Villa already exists");
                 return BadRequest(ModelState);
@@ -98,8 +98,8 @@ namespace MagicVilla_API.Controllers
                 
             };
 
-            _db.Villas.Add(model);
-            _db.SaveChanges();
+            await _db.Villas.AddAsync(model);
+            await _db.SaveChangesAsync();
             
             return CreatedAtRoute("GetVilla", new { id = model.Id }, model);
         }
@@ -108,24 +108,24 @@ namespace MagicVilla_API.Controllers
         //eth IActionResult dunnama ehema krnna one na
 
         [HttpDelete("{id:int}",Name ="DeleteVilla")]
-        public IActionResult DeleteVilla(int id)
+        public async Task<IActionResult> DeleteVilla(int id)
         {
             if (id == 0)
             {
                 return BadRequest();
             }
-            var villa = _db.Villas.FirstOrDefault(u =>u.Id == id);
+            var villa = await _db.Villas.FirstOrDefaultAsync(u => u.Id == id);
             if (villa == null)
             {
                 return NotFound();
             }
             _db.Villas.Remove(villa);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
             return NoContent();
         }
 
         [HttpPut("{id:int}", Name ="UpdateVilla")]
-        public IActionResult UpdateVilla(int id, [FromBody]VillaUpdateDTO villaUpdateDTO)
+        public async Task<IActionResult> UpdateVilla(int id, [FromBody]VillaUpdateDTO villaUpdateDTO)
         {
             if (villaUpdateDTO == null || id != villaUpdateDTO.Id)
             {
@@ -144,7 +144,7 @@ namespace MagicVilla_API.Controllers
                 Sqft = villaUpdateDTO.Sqft,
             };
             _db.Villas.Update(model);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             return NoContent();
         }
@@ -152,13 +152,13 @@ namespace MagicVilla_API.Controllers
         //me patch eka add krnna kalin nuget package 2k install krnna one NewtonsoftJson ekai jsonPatch ekai.
         // itapsse program.cs eke AddNewtonsoftJson kiyla controllers wla reg krnna one
         [HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
-        public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDTO> patchDTO)
+        public async Task<IActionResult> UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDTO> patchDTO)
         {
             if (patchDTO == null || id == 0)
             {
                 return BadRequest();
             }
-            var villa = _db.Villas.AsNoTracking().FirstOrDefault(v => v.Id == id);
+            var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(v => v.Id == id);
             VillaUpdateDTO villaUpdateDTO = new()
             {
                 Amenity = villa.Amenity,
@@ -189,7 +189,7 @@ namespace MagicVilla_API.Controllers
                 Sqft = villaUpdateDTO.Sqft,
             };
             _db.Villas.Update(model);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
             if (!ModelState.IsValid)
             {
                 return BadRequest();
